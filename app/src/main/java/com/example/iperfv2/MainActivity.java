@@ -115,7 +115,6 @@ public class MainActivity extends AppCompatActivity {
             switch (msg.what) {
                 case 10:
                     String resultMsg = (String) msg.obj;
-                    formatStringToGraph(resultMsg);
                     weakReference.get().testAdapter.addString(resultMsg);
                     weakReference.get().mRecycler.scrollToPosition(weakReference.get().testAdapter.getItemCount() - 1);
                     break;
@@ -163,6 +162,7 @@ public class MainActivity extends AppCompatActivity {
                     msg.what = 10;
                     msg.sendToTarget();
 
+                    formatStringToGraph(lineStr + "\r\n");
                     builder.append(lineStr + "\r\n");
                 }
                 while ((lineStr = errorReader.readLine()) != null) {
@@ -204,21 +204,12 @@ public class MainActivity extends AppCompatActivity {
 
     //Catches msg checks for graph input and formats properly
     //VERY NOT DONE
-    public static void formatStringToGraph(String msg) {
-        ArrayList<Integer> list = new ArrayList<>();
-        msg = msg.trim();
-        String word = msg.substring(msg.lastIndexOf(" ") + 1);
-        word = word.trim();
-        System.out.println(word);
-        if (word.equals("Kbytes")) {
-            System.out.println(word);
-            Pattern p = Pattern.compile("(\\d*)\\.*\\d*");
-            Matcher m = p.matcher(msg);
-            while (m.find()) {
-                list.add(Integer.parseInt(m.group()));
-                System.out.println(m.group());
-            }
-            System.out.println(list);
+    public void formatStringToGraph(String msg) {
+        Pattern p = Pattern.compile("(\\d*)\\.\\d*\\s\\wbits\\/sec");
+        Matcher m = p.matcher(msg);
+        while (m.find()) {
+            int value = Integer.parseInt(m.group(1));
+            addEntry(value);
         }
     }
 
