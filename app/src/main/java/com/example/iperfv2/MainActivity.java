@@ -163,7 +163,7 @@ public class MainActivity extends AppCompatActivity {
                     msg.sendToTarget();
 
                     formatStringToGraph(lineStr + "\r\n");
-                    builder.append(lineStr + "\r\n");
+                    //builder.append(lineStr + "\r\n");
                 }
                 while ((lineStr = errorReader.readLine()) != null) {
 
@@ -203,13 +203,13 @@ public class MainActivity extends AppCompatActivity {
 
 
     //Catches msg checks for graph input and formats properly
-    //VERY NOT DONE
     public void formatStringToGraph(String msg) {
         Pattern p = Pattern.compile("(\\d*)\\.\\d*\\s\\wbits\\/sec");
         Matcher m = p.matcher(msg);
         while (m.find()) {
             int value = Integer.parseInt(m.group(1));
             addEntry(value);
+            System.out.println(value);
         }
     }
 
@@ -234,7 +234,7 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
         /*
-
+        // Alternative to store to externaldrive NOT WORKING
         try {
             File extBaseDir = Environment.getExternalStorageDirectory();
             File file = new File(extBaseDir.getAbsolutePath() + "/iPerf/filename.txt");
@@ -262,14 +262,10 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public void entryButton(View view) {
-        int i = Integer.parseInt(inputText.getText().toString());
-        addEntry(i);
-    }
-
     private void addEntry(int value) {
 
         LineData data = chart.getData();
+        chart.setData(data);
 
         if (data != null) {
 
@@ -283,16 +279,15 @@ public class MainActivity extends AppCompatActivity {
 
             data.addEntry(new Entry(set.getEntryCount(), (float) value), 0);
             data.notifyDataChanged();
-
-            // let the chart know it's data has changed
             chart.notifyDataSetChanged();
+            chart.invalidate();
 
             // limit the number of visible entries
-            chart.setVisibleXRangeMaximum(0);
+            //chart.setVisibleXRangeMaximum(0);
             // chart.setVisibleYRange(30, AxisDependency.LEFT);
 
             // move to the latest entry
-            chart.moveViewToX(data.getEntryCount());
+            //chart.moveViewToX(data.getEntryCount());
         }
     }
 
@@ -303,13 +298,10 @@ public class MainActivity extends AppCompatActivity {
         set.setColor(ColorTemplate.getHoloBlue());
         set.setCircleColor(Color.WHITE);
         set.setLineWidth(2f);
-        set.setCircleRadius(4f);
         set.setFillAlpha(65);
-        set.setFillColor(ColorTemplate.getHoloBlue());
-        set.setHighLightColor(Color.rgb(244, 117, 117));
-        set.setValueTextColor(Color.WHITE);
-        set.setValueTextSize(9f);
         set.setDrawValues(false);
+
+
         return set;
     }
 }
