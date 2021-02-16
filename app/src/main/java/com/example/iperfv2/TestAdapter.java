@@ -17,8 +17,6 @@ import java.util.Collections;
 import java.util.List;
 
 public class TestAdapter extends RecyclerView.Adapter {
-    
-    private static final String TAG = "TestAdapter";
 
     private List<String> stringList = Collections.synchronizedList(new ArrayList<String>());
 
@@ -46,7 +44,6 @@ public class TestAdapter extends RecyclerView.Adapter {
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        Log.d(TAG, "onBindViewHolder: called");
         ((ItemView)holder).mTvText.setText(stringList.get(position));
 
     }
