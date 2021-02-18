@@ -1,41 +1,43 @@
 package com.example.iperfv2;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.content.Context;
-import android.content.res.Resources;
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.system.ErrnoException;
 import android.system.Os;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewTreeObserver;
+import android.widget.CompoundButton;
 import android.widget.EditText;
-import android.widget.TextView;
+import android.widget.FrameLayout;
+import android.widget.ToggleButton;
 
-import com.example.iperfv2.*;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
-import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
 import com.github.mikephil.charting.utils.ColorTemplate;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.ref.WeakReference;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -52,6 +54,8 @@ public class MainActivity extends AppCompatActivity {
 
     private StringBuilder builder;
     private LineChart chart;
+    private Process process;
+    private ToggleButton toggle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,6 +69,43 @@ public class MainActivity extends AppCompatActivity {
         initViews();
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle item selection
+        switch (item.getItemId()) {
+            case R.id.menu_about:
+
+                AlertDialog alertDialog = new AlertDialog.Builder(this).create(); //Read Update
+                alertDialog.setTitle("Information");
+                alertDialog.setMessage("" +
+                        "Application made by senior interns at Sony Mobile Communication for the Access Technology department during" +
+                        "spring 2021." +
+                        "");
+
+                alertDialog.show();  //<-- See This!
+                return true;
+            case R.id.menu_clear:
+                clearView();
+                return true;
+            case R.id.menu_presets:
+                // bring up presets window
+                return true;
+            case R.id.menu_save:
+                saveLog();
+
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
     public void initViews() {
         builder = new StringBuilder();
         mRecycler = (RecyclerView) findViewById(R.id.mRecycler);
@@ -74,19 +115,30 @@ public class MainActivity extends AppCompatActivity {
         mRecycler.setAdapter(testAdapter);
         testHandler = new TestHandler(this);
         inputText = findViewById(R.id.inputText);
-        findViewById(R.id.btnEnter).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                executeTest(getCommand());
+
+        toggle = (ToggleButton) findViewById(R.id.toggleButton);
+        toggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    clearView();
+                    executeTest(inputText.getText().toString());
+                    buttonView.setBackgroundColor(Color.GREEN);
+                } else {
+                    process.destroy();
+                    buttonView.setBackgroundColor(Color.RED);
+                }
             }
         });
+
         chart = findViewById(R.id.chart1);
         chart.setBackgroundColor(Color.LTGRAY);
         chart.getDescription().setEnabled(false);
-        LineData data = new LineData();
-        chart.setData(data);
     }
 
+
+    // //   //  //  //  //  //  //
+    //  Process related methods //
+    //  //  //  //  //  //  //  //
     public void executeTest(String cmd) {
         executorService = Executors.newSingleThreadExecutor();
         executorService.execute(new Thread(new testTask(cmd, testHandler, 1)));
@@ -137,9 +189,6 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void run() {
-            builder.setLength(0);
-
-            Process process = null;
             BufferedReader successReader = null;
             BufferedReader errorReader = null;
 
@@ -163,7 +212,7 @@ public class MainActivity extends AppCompatActivity {
                     msg.sendToTarget();
 
                     formatStringToGraph(lineStr + "\r\n");
-                    //builder.append(lineStr + "\r\n");
+                    builder.append(lineStr + "\r\n");
                 }
                 while ((lineStr = errorReader.readLine()) != null) {
 
@@ -174,6 +223,9 @@ public class MainActivity extends AppCompatActivity {
                     msg.sendToTarget();
                 }
                 Thread.sleep(delay * 1000);
+
+                process.waitFor();
+                toggle.setChecked(false);
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
@@ -196,26 +248,23 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // //   //  //  //
+    //  Misc methods //
+    //  //  //  //  //
 
-    public String getCommand() {
-        return inputText.getText().toString();
+    public void clearView() {
+        chart.clear();
+        LineData data = new LineData();
+        chart.setData(data);
+
+        testAdapter.clear();
+        mRecycler.removeAllViewsInLayout();
+        builder.setLength(0);
     }
 
-
-    //Catches msg checks for graph input and formats properly
-    public void formatStringToGraph(String msg) {
-        Pattern p = Pattern.compile("(\\d*)\\.\\d*\\s\\wbits\\/sec");
-        Matcher m = p.matcher(msg);
-        while (m.find()) {
-            int value = Integer.parseInt(m.group(1));
-            addEntry(value);
-            System.out.println(value);
-        }
-    }
-
-    public void saveLog(View view) {
+    public void saveLog() {
         String filename = Calendar.getInstance().getTime().toString();
-        String fileContents = "Hello world"; //builder.toString();
+        String fileContents = builder.toString();
 
         FileOutputStream fos = null;
 
@@ -224,15 +273,18 @@ public class MainActivity extends AppCompatActivity {
             fos.write(fileContents.getBytes());
 
             Message msg = testHandler.obtainMessage();
-            msg.obj = "Saved to " + getFilesDir() + "\r\n";
+            msg.obj = "Log to " + getFilesDir() + "\r\n";
             msg.what = 10;
             msg.sendToTarget();
+
+            //chart.saveToGallery(filename);
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
+
         /*
         // Alternative to store to externaldrive NOT WORKING
         try {
@@ -260,6 +312,16 @@ public class MainActivity extends AppCompatActivity {
          */
 
 
+    }
+
+    //Catches msg checks for graph input and formats properly
+    public void formatStringToGraph(String msg) {
+        Pattern p = Pattern.compile("(\\d*)\\d*\\s(\\w)bits\\/sec");   //"(\\d*)\\.\\d*\\s\\wbits\\/sec"
+        Matcher m = p.matcher(msg);
+        while (m.find()) {
+            int value = Integer.parseInt(m.group(1));
+            addEntry(value);
+        }
     }
 
     private void addEntry(int value) {
@@ -294,6 +356,7 @@ public class MainActivity extends AppCompatActivity {
     private LineDataSet createSet() {
 
         LineDataSet set = new LineDataSet(null, "Download");
+        set.setMode(LineDataSet.Mode.CUBIC_BEZIER);
         set.setAxisDependency(YAxis.AxisDependency.LEFT);
         set.setColor(ColorTemplate.getHoloBlue());
         set.setCircleColor(Color.WHITE);
@@ -304,5 +367,7 @@ public class MainActivity extends AppCompatActivity {
 
         return set;
     }
+
+
 }
 
