@@ -1,5 +1,6 @@
 package com.example.iperfv2;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,9 +14,20 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class TestAdapter extends RecyclerView.Adapter {
+public class PresetAdapter extends RecyclerView.Adapter {
+
+    private final String TAG = getClass().getSimpleName();
+
+    public PresetAdapter(ListItemClickListener mOnClickListener) {
+        this.mOnClickListener = mOnClickListener;
+    }
+
+    interface ListItemClickListener{
+        void onListItemClick(int position);
+    }
 
     private List<String> stringList = Collections.synchronizedList(new ArrayList<String>());
+    final private ListItemClickListener mOnClickListener;
 
     public void addString(String string){
         int currentPosition = stringList.size();
@@ -35,7 +47,7 @@ public class TestAdapter extends RecyclerView.Adapter {
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.test_item,parent,false);
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.preset_item,parent,false);
         return new ItemView(view);
     }
 
@@ -50,7 +62,7 @@ public class TestAdapter extends RecyclerView.Adapter {
         return stringList.size();
     }
 
-    public class ItemView extends RecyclerView.ViewHolder{
+    public class ItemView extends RecyclerView.ViewHolder implements View.OnClickListener {
         TextView mTvText;
         RelativeLayout parentLayout;
 
@@ -58,7 +70,13 @@ public class TestAdapter extends RecyclerView.Adapter {
             super(itemView);
             mTvText = itemView.findViewById(R.id.pr_item);
             parentLayout = itemView.findViewById(R.id.parent_layout);
+            itemView.setOnClickListener(this);
+        }
+
+        @Override
+        public void onClick(View v) {
+            int position = getAdapterPosition();
+            mOnClickListener.onListItemClick(position);
         }
     }
-
 }

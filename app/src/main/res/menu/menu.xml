@@ -21,4 +21,7 @@
     <item
         android:id="@+id/menu_save"
         android:title="Save Log" />
+    <item
+        android:id="@+id/menu_access"
+        android:title="Give Access" />
 </menu>
