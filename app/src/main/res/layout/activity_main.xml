@@ -19,7 +19,7 @@
             android:layout_marginEnd="2dp"
             android:ems="10"
             android:inputType="textPersonName"
-            android:text="iperf3 -c 192.168.0.2 -t 10 --forceflush"
+            android:hint="Input"
             app:layout_constraintEnd_toStartOf="@+id/toggleButton"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />

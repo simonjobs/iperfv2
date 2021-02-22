@@ -423,15 +423,15 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
 
     //Catches msg checks for graph input and formats properly
     public void formatStringToGraph(String msg) {
-        Pattern p = Pattern.compile("(\\d*)\\d*\\s(\\w)bits\\/sec");   //"(\\d*)\\.\\d*\\s\\wbits\\/sec"
+        Pattern p = Pattern.compile("(\\d*\\.*\\d*)\\d*\\s(\\w*)bits\\/sec");    //(\\d*)\\d*\\s(\\w)bits\\/sec"), "(\\d*)\\.\\d*\\s\\wbits\\/sec"
         Matcher m = p.matcher(msg);
         while (m.find()) {
-            int value = Integer.parseInt(m.group(1));
+            float value = Float.valueOf(m.group(1));
             addEntry(value);
         }
     }
 
-    private void addEntry(int value) {
+    private void addEntry(float value) {
 
         LineData data = chart.getData();
         chart.setData(data);
@@ -463,7 +463,6 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
     private LineDataSet createSet() {
 
         LineDataSet set = new LineDataSet(null, "Download");
-        set.setMode(LineDataSet.Mode.CUBIC_BEZIER);
         set.setAxisDependency(YAxis.AxisDependency.LEFT);
         set.setColor(ColorTemplate.getHoloBlue());
         set.setCircleColor(Color.WHITE);
