@@ -48,6 +48,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.ref.WeakReference;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.concurrent.ExecutorService;
@@ -161,8 +163,13 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
                     clearView();
-                    executeTest(inputText.getText().toString());
-                    buttonView.setBackgroundColor(Color.GREEN);
+                    String cmd = inputText.getText().toString();
+                    if (cmd.length() > 0) {
+                        executeTest(cmd);
+                        buttonView.setBackgroundColor(Color.GREEN);
+                    } else {
+                        toggle.setChecked(false);
+                    }
                 } else {
                     process.destroy();
                     buttonView.setBackgroundColor(Color.RED);
@@ -180,6 +187,7 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
         chart = findViewById(R.id.chart1);
         chart.setBackgroundColor(Color.LTGRAY);
         chart.getDescription().setEnabled(false);
+        chart.setNoDataText("Run an iPerf command to graph output");
     }
 
 
@@ -187,8 +195,8 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
     //  Process related methods //
     //  //  //  //  //  //  //  //
     public void executeTest(String cmd) {
-        executorService = Executors.newSingleThreadExecutor();
-        executorService.execute(new Thread(new testTask(cmd, testHandler, 1)));
+            executorService = Executors.newSingleThreadExecutor();
+            executorService.execute(new Thread(new testTask(cmd, testHandler, 1)));
     }
 
     @Override
@@ -332,6 +340,9 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
 
     public void loadPresets() {
         String preset;
+        presetAdapter.clear();
+        pRecycler.removeAllViewsInLayout();
+        
         try {
             InputStream in = getResources().openRawResource(R.raw.presets);
             InputStreamReader inputStreamReader = new InputStreamReader(in);
@@ -367,35 +378,16 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
     }
 
     public void saveTest() {
-        String filename = Calendar.getInstance().getTime().toString();
+
+        LocalDateTime time = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd-HH.mm.ss");
+        String filename = time.format(formatter);
+
         String fileContents = builder.toString();
-        chart.saveToGallery(filename.substring(17,19));
 
-        /*
-        FileOutputStream fos = null;
-
-        try {
-            fos = openFileOutput(filename, MODE_PRIVATE);
-            fos.write(fileContents.getBytes());
-
-            Message msg = testHandler.obtainMessage();
-            msg.obj = "Log to " + getFilesDir() + "\r\n";
-            msg.what = 10;
-            msg.sendToTarget();
-
-            //chart.saveToGallery(filename);
-
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        */
-        // Alternative to store to externaldrive NOT WORKING
         try {
             File extBaseDir = Environment.getExternalStorageDirectory();
-            File file = new File(extBaseDir.getAbsolutePath() + "/iPerf/");
+            File file = new File(extBaseDir.getAbsolutePath() + "/iPerf/" + filename );
             if (!file.exists()) {
                 file.mkdirs();
             } else {
@@ -406,15 +398,17 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
             String filePath = file.getAbsolutePath();
             FileOutputStream out = null;
 
-            out = new FileOutputStream(filePath + "/" + filename.substring(17,19) + ".txt");
+            out = new FileOutputStream(filePath + "/log.txt");
             out.write(fileContents.getBytes());
             out.flush();
             out.close();
 
             Message msg = testHandler.obtainMessage();
-            msg.obj = "Saved to " + filePath + " as: " + filename + "\r\n";
+            msg.obj = "Saved to " + filePath + "\r\n";
             msg.what = 10;
             msg.sendToTarget();
+
+            chart.saveToPath("graph", "/iPerf/" + filename);
 
             }catch (Exception e) {
             e.printStackTrace();
@@ -427,7 +421,19 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
         Matcher m = p.matcher(msg);
         while (m.find()) {
             float value = Float.valueOf(m.group(1));
-            addEntry(value);
+            String measure = m.group(2);
+            switch (measure) {
+                case "G":
+                    value = value * 1000;
+                    break;
+                case "K":
+                    value = value / 1000;
+                    break;
+                case "":
+                    value = value / 1000000;
+                    break;
+            }
+            addDualEntry(value ,value + 10);
         }
     }
 
@@ -442,7 +448,7 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
             // set.addEntry(...); // can be called as well
 
             if (set == null) {
-                set = createSet();
+                set = createSet(1);
                 data.addDataSet(set);
             }
 
@@ -451,63 +457,62 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
             chart.notifyDataSetChanged();
             chart.invalidate();
 
-            // limit the number of visible entries
-            //chart.setVisibleXRangeMaximum(0);
-            // chart.setVisibleYRange(30, AxisDependency.LEFT);
-
-            // move to the latest entry
-            //chart.moveViewToX(data.getEntryCount());
         }
     }
 
-    private LineDataSet createSet() {
+    private void addDualEntry(float up, float down) {
 
-        LineDataSet set = new LineDataSet(null, "Download");
-        set.setAxisDependency(YAxis.AxisDependency.LEFT);
-        set.setColor(ColorTemplate.getHoloBlue());
-        set.setCircleColor(Color.WHITE);
-        set.setLineWidth(2f);
-        set.setFillAlpha(65);
-        set.setDrawValues(false);
+        LineData data = chart.getData();
+        chart.setData(data);
 
+        if (data != null) {
 
+            ILineDataSet setDown = data.getDataSetByIndex(0);
+            ILineDataSet setUp = data.getDataSetByIndex(1);
+            // set.addEntry(...); // can be called as well
+
+            if (setDown == null) {
+                setDown = createSet(1);
+                data.addDataSet(setDown);
+            }
+            if (setUp == null) {
+                setUp = createSet(2);
+                data.addDataSet(setUp);
+            }
+
+            setDown.addEntry(new Entry(setDown.getEntryCount(), (float) up));
+            setUp.addEntry(new Entry(setUp.getEntryCount(), (float) down));
+            data.notifyDataChanged();
+            chart.notifyDataSetChanged();
+            chart.invalidate();
+
+        }
+    }
+
+    private LineDataSet createSet(int setType) {
+        LineDataSet set = null;
+        switch(setType) {
+            case 1:
+                set = new LineDataSet(null, "Download");
+                set.setAxisDependency(YAxis.AxisDependency.LEFT);
+                set.setColor(Color.BLUE);
+                set.setCircleColor(Color.WHITE);
+                set.setLineWidth(2f);
+                set.setFillAlpha(65);
+                set.setDrawValues(false);
+                return set;
+
+            case 2:
+                set = new LineDataSet(null, "Upload");
+                set.setAxisDependency(YAxis.AxisDependency.LEFT);
+                set.setColor(Color.RED);
+                set.setCircleColor(Color.WHITE);
+                set.setLineWidth(2f);
+                set.setFillAlpha(65);
+                set.setDrawValues(false);
+                return set;
+        }
         return set;
     }
-
-    //REQUEST PERMISSION TO SAVE CHART IMAGE CODE
-    private static final int PERMISSION_STORAGE = 0;
-
-    protected void requestStoragePermission(View view) {
-        if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-            Snackbar.make(view, "Write permission is required to save image to gallery", Snackbar.LENGTH_INDEFINITE)
-                    .setAction(android.R.string.ok, new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSION_STORAGE);
-                        }
-                    }).show();
-        } else {
-            Toast.makeText(getApplicationContext(), "Permission Required!", Toast.LENGTH_SHORT)
-                    .show();
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSION_STORAGE);
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if (requestCode == PERMISSION_STORAGE) {
-            if (grantResults.length == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-               // chart.saveToGallery();
-            } else {
-                Toast.makeText(getApplicationContext(), "Saving FAILED!", Toast.LENGTH_SHORT)
-                        .show();
-            }
-        }
-    }
-
-
-
-
-
 }
 

@@ -7,6 +7,8 @@
         android:layout_width="match_parent"
         android:layout_height="150px"
         android:layout_alignParentBottom="false"
+        android:background="#9E9E9E"
+        android:clickable="false"
         android:gravity="center_vertical"
         android:text="TextView"
         android:textSize="18sp" />
