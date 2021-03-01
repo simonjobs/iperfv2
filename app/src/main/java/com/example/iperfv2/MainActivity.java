@@ -20,6 +20,7 @@ import android.os.Message;
 import android.provider.Settings;
 import android.system.ErrnoException;
 import android.system.Os;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -54,6 +55,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.*;
 
 public class MainActivity extends AppCompatActivity implements PresetAdapter.ListItemClickListener, ActivityCompat.OnRequestPermissionsResultCallback{
@@ -76,6 +78,8 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
     private StringBuilder builder;
     private Process process;
     private ArrayList<String> presets;
+
+    public static int PICK_FILE = 1;
 
 
     @Override
@@ -131,6 +135,11 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
                 Uri uri = Uri.fromParts("package", getPackageName(), null);
                 intent.setData(uri);
                 startActivity(intent);
+                return true;
+            case R.id.menu_import:
+                Intent intentImport = new Intent(Intent.ACTION_GET_CONTENT);
+                intentImport.setType("text/plain");
+                startActivityForResult(intentImport, PICK_FILE);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -415,9 +424,56 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
         }
     }
 
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == PICK_FILE) {
+            if (resultCode == RESULT_OK) {
+                // User pick the file
+                Uri uri = data.getData();
+                readTextFile(uri);
+                Toast.makeText(this, "Test imported!", Toast.LENGTH_LONG).show();
+            } else {
+                System.out.print("testLoad");
+            }
+        }
+    }
+
+    private void readTextFile(Uri uri){
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(new InputStreamReader(getContentResolver().openInputStream(uri)));
+            String tmpLine = "";
+            clearView();
+
+            while ((tmpLine = reader.readLine()) != null) {
+
+                formatStringToGraph(tmpLine + "\r\n");
+
+                Message msg = testHandler.obtainMessage();
+                msg.obj = tmpLine + "\r\n";
+                msg.what = 10;
+                msg.sendToTarget();
+                }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (reader != null){
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
     //Catches msg checks for graph input and formats properly
     public void formatStringToGraph(String msg) {
-        Pattern p = Pattern.compile("(\\d*\\.*\\d*)\\d*\\s(\\w*)bits\\/sec");    //(\\d*)\\d*\\s(\\w)bits\\/sec"), "(\\d*)\\.\\d*\\s\\wbits\\/sec"
+        Pattern p = Pattern.compile("(\\d*\\.*\\d*)\\d*\\s(\\w*)bits\\/sec");
         Matcher m = p.matcher(msg);
         while (m.find()) {
             float value = Float.valueOf(m.group(1));
@@ -433,7 +489,8 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
                     value = value / 1000000;
                     break;
             }
-            addDualEntry(value ,value + 10);
+           // addDualEntry(value , Float.parseFloat(String.valueOf(0 + Math.random() * 1)));
+            addEntry(value);
         }
     }
 
@@ -445,18 +502,15 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
         if (data != null) {
 
             ILineDataSet set = data.getDataSetByIndex(0);
-            // set.addEntry(...); // can be called as well
 
             if (set == null) {
                 set = createSet(1);
                 data.addDataSet(set);
             }
-
             data.addEntry(new Entry(set.getEntryCount(), (float) value), 0);
             data.notifyDataChanged();
             chart.notifyDataSetChanged();
             chart.invalidate();
-
         }
     }
 
@@ -469,7 +523,6 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
 
             ILineDataSet setDown = data.getDataSetByIndex(0);
             ILineDataSet setUp = data.getDataSetByIndex(1);
-            // set.addEntry(...); // can be called as well
 
             if (setDown == null) {
                 setDown = createSet(1);

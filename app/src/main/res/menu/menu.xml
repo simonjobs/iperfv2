@@ -24,4 +24,7 @@
     <item
         android:id="@+id/menu_access"
         android:title="Give Access" />
+    <item
+        android:id="@+id/menu_import"
+        android:title="Import Test" />
 </menu>
