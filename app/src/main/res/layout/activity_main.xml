@@ -4,18 +4,20 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/myViewFlipper"
     android:layout_width="match_parent"
-    android:layout_height="match_parent" >
+    android:layout_height="match_parent">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/layoutFirst"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:context=".MainActivity">
+        tools:context=".MainActivity"
+        android:windowSoftInputMode="adjustNothing">
 
         <EditText
             android:id="@+id/inputText"
             android:layout_width="303dp"
-            android:layout_height="46dp"
+            android:layout_height="0dp"
+            app:layout_constraintHeight_percent="0.05"
             android:layout_marginEnd="2dp"
             android:ems="10"
             android:inputType="textPersonName"
@@ -27,7 +29,8 @@
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/mRecycler"
             android:layout_width="match_parent"
-            android:layout_height="148dp"
+            android:layout_height="0dp"
+            app:layout_constraintHeight_percent="0.35"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.4"
@@ -38,18 +41,20 @@
         <com.github.mikephil.charting.charts.LineChart
             android:id="@+id/chart1"
             android:layout_width="match_parent"
-            android:layout_height="590dp"
+            android:layout_height="0dp"
+            app:layout_constraintHeight_percent="0.6"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/inputText"
-            app:layout_constraintVertical_bias="0.006"></com.github.mikephil.charting.charts.LineChart>
+            app:layout_constraintVertical_bias="0.006"/>
 
         <ToggleButton
             android:id="@+id/toggleButton"
             android:layout_width="88dp"
-            android:layout_height="40dp"
+            android:layout_height="0dp"
+            app:layout_constraintHeight_percent="0.05"
             android:background="@drawable/toggle"
             android:text="ToggleButton"
             app:layout_constraintEnd_toEndOf="parent"
@@ -62,38 +67,25 @@
         android:id="@+id/layoutSecond"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:context=".MainActivity">
-
-        <EditText
-            android:id="@+id/filePath"
-            android:layout_width="303dp"
-            android:layout_height="46dp"
-            android:layout_marginEnd="2dp"
-            android:ems="10"
-            android:inputType="textPersonName"
-            android:text="/data/user/0/com.example.iperfv2/files/preset.txt"
-            app:layout_constraintEnd_toStartOf="@+id/loadButton"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+        tools:context=".MainActivity"
+        android:windowSoftInputMode="adjustNothing">
 
         <Button
             android:id="@+id/loadButton"
-            android:layout_width="88dp"
-            android:layout_height="40dp"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            app:layout_constraintHeight_percent="0.05"
             android:text="Load"
-            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/pRecycler"
-            android:layout_width="407dp"
-            android:layout_height="738dp"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            app:layout_constraintHeight_percent="0.95"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/filePath"
-            app:layout_constraintVertical_bias="1.0" />
+            app:layout_constraintTop_toBottomOf="@id/loadButton"
+            app:layout_constraintEnd_toEndOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

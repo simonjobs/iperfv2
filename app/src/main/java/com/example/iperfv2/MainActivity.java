@@ -65,7 +65,8 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
     private RecyclerView mRecycler;
     private EditText inputText;
     private ToggleButton toggle;
-    private LineChart chart;
+    //private LineChart chart;
+    private ChartHandler chart;
     private TestAdapter testAdapter;
     private TestHandler testHandler;
 
@@ -78,8 +79,11 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
     private StringBuilder builder;
     private Process process;
     private ArrayList<String> presets;
+    private ArrayList<Float> pair;
+    private int interval;
 
     public static int PICK_FILE = 1;
+    public static int PICK_PRESET = 2;
 
 
     @Override
@@ -110,10 +114,10 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
                 AlertDialog alertDialog = new AlertDialog.Builder(this).create(); //Read Update
                 alertDialog.setTitle("Information");
                 alertDialog.setMessage("" +
-                        "Application made by senior interns at Sony Mobile Communication for the Access Technology department during" +
-                        "spring 2021." +
-                        "");
-
+                        "1. Give file access in order to save and import tests and presets \n\n" +
+                        "2. Import presets from txt file or input your own command \n\n" +
+                        "3. Run test and save or clear dialog \n\n " +
+                        "By default '-f m' and '--forceflush' is added if not found in iperf cmd");
                 alertDialog.show();  //<-- See This!
                 return true;
             case R.id.menu_clear:
@@ -150,6 +154,9 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
         flipper = findViewById(R.id.myViewFlipper);
         builder = new StringBuilder();
         presets = new ArrayList<>();
+        pair = new ArrayList<>();
+
+        chart = new ChartHandler(MainActivity.this, this);
 
         mRecycler = (RecyclerView) findViewById(R.id.mRecycler);
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
@@ -165,7 +172,6 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
         presetAdapter = new PresetAdapter(this);
         pRecycler.setAdapter(presetAdapter);
         presetHandler = new PresetHandler(this);
-        loadText = findViewById(R.id.filePath);
 
         toggle = (ToggleButton) findViewById(R.id.toggleButton);
         toggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -173,8 +179,9 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
                 if (isChecked) {
                     clearView();
                     String cmd = inputText.getText().toString();
+
                     if (cmd.length() > 0) {
-                        executeTest(cmd);
+                        executeTest(formatCmd(cmd));
                         buttonView.setBackgroundColor(Color.GREEN);
                     } else {
                         toggle.setChecked(false);
@@ -189,14 +196,11 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
         Button button = (Button) findViewById(R.id.loadButton);
         button.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                loadPresets();
+                Intent intentPresets = new Intent(Intent.ACTION_GET_CONTENT);
+                intentPresets.setType("text/plain");
+                startActivityForResult(intentPresets, PICK_PRESET);
             }
         });
-
-        chart = findViewById(R.id.chart1);
-        chart.setBackgroundColor(Color.LTGRAY);
-        chart.getDescription().setEnabled(false);
-        chart.setNoDataText("Run an iPerf command to graph output");
     }
 
 
@@ -224,8 +228,6 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
 
         inputText.setText(presets.get(position));
         flipper.showNext();
-
-
     }
 
     private static class TestHandler extends Handler {
@@ -305,7 +307,7 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
                     msg.what = 10;
                     msg.sendToTarget();
 
-                    formatStringToGraph(lineStr + "\r\n");
+                    formatGraph(lineStr + "\r\n");
                     builder.append(lineStr + "\r\n");
                 }
                 while ((lineStr = errorReader.readLine()) != null) {
@@ -345,19 +347,68 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
     // //   //  //  //
     //  Misc methods //
     //  //  //  //  //
+    public void clearView() {
+        chart.getChart().clear();
+        LineData data = new LineData();
+        chart.getChart().setData(data);
+
+        testAdapter.clear();
+        mRecycler.removeAllViewsInLayout();
+        builder.setLength(0);
+    }
+
+    public String formatCmd(String cmd) {
+        ArrayList<Boolean> params = new ArrayList<>();
+        StringBuilder newCmd = new StringBuilder();
+        newCmd.append(cmd);
+        String[] split = cmd.split(" ");
+        params.add(0, false);
+        params.add(1, false);
+        params.add(2, false);
+        params.add(3, false);
+
+        for (String param : split) {
+            if (param.contains("iperf3")) {
+                params.add(0, true);
+            }
+            if (param.contains("--forceflush")) {
+                params.add(1, true);
+            }
+            if (param.contains("-f")) {
+                params.add(2, true);
+            }
+            if (param.contains("-i")) {
+                params.add(3, true);
+                int tmp = Integer.parseInt(param.replace("-i",""));
+                interval = tmp;
+            }
+        }
+        if(params.get(0) == false) {
+            return cmd;
+        }
+        if(params.get(0) == true && params.get(1) == false) {
+            newCmd.append(" --forceflush");
+        }
+        if(params.get(0) == true && params.get(2) == false) {
+            newCmd.append(" -fm");
+        }
+        if(params.get(0) == true && params.get(3) == false) {
+            interval = 1;
+        }
+        return newCmd.toString();
+    }
 
 
-    public void loadPresets() {
+    public void loadPresets(Uri uri) {
         String preset;
         presetAdapter.clear();
         pRecycler.removeAllViewsInLayout();
+        BufferedReader reader = null;
         
         try {
-            InputStream in = getResources().openRawResource(R.raw.presets);
-            InputStreamReader inputStreamReader = new InputStreamReader(in);
-            BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+            reader = new BufferedReader(new InputStreamReader(getContentResolver().openInputStream(uri)));
 
-            while ((preset = bufferedReader.readLine()) != null) {
+            while ((preset = reader.readLine()) != null) {
 
                 presets.add(preset);
                 Message msg = presetHandler.obtainMessage();
@@ -365,25 +416,12 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
                 msg.what = 10;
                 msg.sendToTarget();
             }
-            inputStreamReader.close();
+            reader.close();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-
-
-    }
-
-    public void clearView() {
-        chart.clear();
-        LineData data = new LineData();
-        chart.setData(data);
-
-        testAdapter.clear();
-        mRecycler.removeAllViewsInLayout();
-        builder.setLength(0);
     }
 
     public void saveTest() {
@@ -417,27 +455,10 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
             msg.what = 10;
             msg.sendToTarget();
 
-            chart.saveToPath("graph", "/iPerf/" + filename);
+            chart.getChart().saveToPath("graph", "/iPerf/" + filename);
 
             }catch (Exception e) {
             e.printStackTrace();
-        }
-    }
-
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        if (requestCode == PICK_FILE) {
-            if (resultCode == RESULT_OK) {
-                // User pick the file
-                Uri uri = data.getData();
-                readTextFile(uri);
-                Toast.makeText(this, "Test imported!", Toast.LENGTH_LONG).show();
-            } else {
-                System.out.print("testLoad");
-            }
         }
     }
 
@@ -450,7 +471,7 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
 
             while ((tmpLine = reader.readLine()) != null) {
 
-                formatStringToGraph(tmpLine + "\r\n");
+                formatGraph(tmpLine + "\r\n");
 
                 Message msg = testHandler.obtainMessage();
                 msg.obj = tmpLine + "\r\n";
@@ -471,101 +492,56 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
         }
     }
 
-    //Catches msg checks for graph input and formats properly
-    public void formatStringToGraph(String msg) {
-        Pattern p = Pattern.compile("(\\d*\\.*\\d*)\\d*\\s(\\w*)bits\\/sec");
+    public void formatGraph(String msg) {
+        Pattern p = Pattern.compile("(T|R)X-C");
         Matcher m = p.matcher(msg);
-        while (m.find()) {
-            float value = Float.valueOf(m.group(1));
-            String measure = m.group(2);
-            switch (measure) {
-                case "G":
-                    value = value * 1000;
-                    break;
-                case "K":
-                    value = value / 1000;
-                    break;
-                case "":
-                    value = value / 1000000;
-                    break;
+
+        if (m.find()) {
+            Pattern pp = Pattern.compile("(\\d*\\.*\\d*)\\d*\\s(\\w*)bits\\/sec");
+            Matcher mm = pp.matcher(msg);
+            while(mm.find()) {
+                if (pair.size() == 0) {
+                    pair.add(Float.valueOf(mm.group(1)));
+
+                } else if (pair.size() == 1) {
+                    pair.add(Float.valueOf(mm.group(1)));
+                    chart.addDualEntry(pair.get(0), pair.get(1), interval);
+                    pair.clear();
+                }
             }
-           // addDualEntry(value , Float.parseFloat(String.valueOf(0 + Math.random() * 1)));
-            addEntry(value);
+        } else {
+            Pattern pp = Pattern.compile("(\\d*\\.*\\d*)\\d*\\s(\\w*)bits\\/sec");
+            Matcher mm = pp.matcher(msg);
+            while (mm.find()) {
+                float value = Float.valueOf(mm.group(1));
+                chart.addEntry(value, interval);
+            }
         }
     }
 
-    private void addEntry(float value) {
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
 
-        LineData data = chart.getData();
-        chart.setData(data);
-
-        if (data != null) {
-
-            ILineDataSet set = data.getDataSetByIndex(0);
-
-            if (set == null) {
-                set = createSet(1);
-                data.addDataSet(set);
+        if (requestCode == PICK_FILE) {
+            if (resultCode == RESULT_OK) {
+                // User pick the file
+                Uri uri = data.getData();
+                readTextFile(uri);
+                Toast.makeText(this, "Test imported!", Toast.LENGTH_LONG).show();
+            } else {
+                System.out.print("testLoad");
             }
-            data.addEntry(new Entry(set.getEntryCount(), (float) value), 0);
-            data.notifyDataChanged();
-            chart.notifyDataSetChanged();
-            chart.invalidate();
-        }
-    }
-
-    private void addDualEntry(float up, float down) {
-
-        LineData data = chart.getData();
-        chart.setData(data);
-
-        if (data != null) {
-
-            ILineDataSet setDown = data.getDataSetByIndex(0);
-            ILineDataSet setUp = data.getDataSetByIndex(1);
-
-            if (setDown == null) {
-                setDown = createSet(1);
-                data.addDataSet(setDown);
+        }else if (requestCode == PICK_PRESET) {
+            if (resultCode == RESULT_OK) {
+                // User pick the file
+                Uri uri = data.getData();
+                loadPresets(uri);
+                Toast.makeText(this, "Presets loaded!", Toast.LENGTH_LONG).show();
+            } else {
+                System.out.print("testPrint");
             }
-            if (setUp == null) {
-                setUp = createSet(2);
-                data.addDataSet(setUp);
-            }
-
-            setDown.addEntry(new Entry(setDown.getEntryCount(), (float) up));
-            setUp.addEntry(new Entry(setUp.getEntryCount(), (float) down));
-            data.notifyDataChanged();
-            chart.notifyDataSetChanged();
-            chart.invalidate();
-
         }
-    }
-
-    private LineDataSet createSet(int setType) {
-        LineDataSet set = null;
-        switch(setType) {
-            case 1:
-                set = new LineDataSet(null, "Download");
-                set.setAxisDependency(YAxis.AxisDependency.LEFT);
-                set.setColor(Color.BLUE);
-                set.setCircleColor(Color.WHITE);
-                set.setLineWidth(2f);
-                set.setFillAlpha(65);
-                set.setDrawValues(false);
-                return set;
-
-            case 2:
-                set = new LineDataSet(null, "Upload");
-                set.setAxisDependency(YAxis.AxisDependency.LEFT);
-                set.setColor(Color.RED);
-                set.setCircleColor(Color.WHITE);
-                set.setLineWidth(2f);
-                set.setFillAlpha(65);
-                set.setDrawValues(false);
-                return set;
-        }
-        return set;
     }
 }
 

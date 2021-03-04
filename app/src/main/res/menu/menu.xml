@@ -1,12 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-    android:layout_marginEnd="401dp"
-    app:layout_constraintEnd_toEndOf="parent"
-    app:layout_constraintTop_toTopOf="parent">
-    android:layout_marginEnd="401dp"
-    app:layout_constraintEnd_toEndOf="parent"
-    app:layout_constraintStart_toStartOf="parent"
-    app:layout_constraintTop_toTopOf="parent">
 
     <item
         android:id="@+id/menu_about"
@@ -20,11 +13,12 @@
 
     <item
         android:id="@+id/menu_save"
-        android:title="Save Log" />
+        android:title="Save Test" />
+    <item
+        android:id="@+id/menu_import"
+        android:title="Load Test" />
     <item
         android:id="@+id/menu_access"
         android:title="Give Access" />
-    <item
-        android:id="@+id/menu_import"
-        android:title="Import Test" />
+
 </menu>
