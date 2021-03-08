@@ -60,24 +60,26 @@ import java.util.regex.*;
 
 public class MainActivity extends AppCompatActivity implements PresetAdapter.ListItemClickListener, ActivityCompat.OnRequestPermissionsResultCallback{
 
+    // Used to rotate main view and preset view
     private ViewFlipper flipper;
 
+    // Main view
     private RecyclerView mRecycler;
     private EditText inputText;
     private ToggleButton toggle;
-    //private LineChart chart;
     private ChartHandler chart;
     private TestAdapter testAdapter;
     private TestHandler testHandler;
 
-    public RecyclerView pRecycler;
-    private EditText loadText;
+    // Preset view
+    private RecyclerView pRecycler;
     private PresetHandler presetHandler;
     private PresetAdapter presetAdapter;
 
+    // Misc containers and services
+    private TestTask task;
     private ExecutorService executorService;
     private StringBuilder builder;
-    private Process process;
     private ArrayList<String> presets;
     private ArrayList<Float> pair;
     private int interval;
@@ -85,11 +87,12 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
     public static int PICK_FILE = 1;
     public static int PICK_PRESET = 2;
 
-
+    // Creates activity and initiates all views and instances used.
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         try {
+            // Necessary in order for iPerf to create test files containing data to transfer.
             Os.setenv("TMPDIR", "/data/data/com.example.iperfv2/cache/", true);
         } catch (ErrnoException e) {
             e.printStackTrace();
@@ -98,6 +101,7 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
         initViews();
     }
 
+    // Creates and inflates menu bar, specified in res/menu/menu.xml
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
@@ -105,6 +109,7 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
         return true;
     }
 
+    // Fills menu bar options with methods
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle item selection
@@ -150,6 +155,7 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
         }
     }
 
+    // Initiates views, handlers and containers
     public void initViews() {
         flipper = findViewById(R.id.myViewFlipper);
         builder = new StringBuilder();
@@ -173,26 +179,30 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
         pRecycler.setAdapter(presetAdapter);
         presetHandler = new PresetHandler(this);
 
+        //On off process button
         toggle = (ToggleButton) findViewById(R.id.toggleButton);
         toggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                //On
                 if (isChecked) {
                     clearView();
                     String cmd = inputText.getText().toString();
 
+                    // If command is not empty it will run otherwise act like no click happened.
                     if (cmd.length() > 0) {
                         executeTest(formatCmd(cmd));
                         buttonView.setBackgroundColor(Color.GREEN);
                     } else {
                         toggle.setChecked(false);
                     }
+                //Off
                 } else {
-                    process.destroy();
+                    task.getProcess().destroy();
                     buttonView.setBackgroundColor(Color.RED);
                 }
             }
         });
-
+        // Load presets button handler
         Button button = (Button) findViewById(R.id.loadButton);
         button.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
@@ -209,9 +219,11 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
     //  //  //  //  //  //  //  //
     public void executeTest(String cmd) {
             executorService = Executors.newSingleThreadExecutor();
-            executorService.execute(new Thread(new testTask(cmd, testHandler, 1)));
+            task = new TestTask(cmd, testHandler, 1, this);
+            executorService.execute(new Thread(task));
     }
 
+    //Used to destroy running proccess
     @Override
     public void onDestroy() {
         if (testHandler != null) {
@@ -223,125 +235,12 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
         super.onDestroy();
     }
 
+    // Listens for click on preset RecyclerView and fetches clicked string to input box and switches view
     @Override
     public void onListItemClick(int position) {
 
         inputText.setText(presets.get(position));
         flipper.showNext();
-    }
-
-    private static class TestHandler extends Handler {
-        private WeakReference<MainActivity> weakReference;
-
-        public TestHandler(MainActivity activity) {
-            this.weakReference = new WeakReference<>(activity);
-        }
-
-        @Override
-        public void handleMessage(@NonNull Message msg) {
-            switch (msg.what) {
-                case 10:
-                    String resultMsg = (String) msg.obj;
-                    weakReference.get().testAdapter.addString(resultMsg);
-                    weakReference.get().mRecycler.scrollToPosition(weakReference.get().testAdapter.getItemCount() - 1);
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-
-    private static class PresetHandler extends Handler {
-        private WeakReference<MainActivity> weakReference;
-
-        public PresetHandler(MainActivity activity) {
-            this.weakReference = new WeakReference<>(activity);
-        }
-
-        @Override
-        public void handleMessage(@NonNull Message msg) {
-            switch (msg.what) {
-                case 10:
-                    String resultMsg = (String) msg.obj;
-                    weakReference.get().presetAdapter.addString(resultMsg);
-                    weakReference.get().pRecycler.scrollToPosition(weakReference.get().presetAdapter.getItemCount() - 1);
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-
-    private class testTask implements Runnable {
-        private String cmd;
-        private TestHandler testHandler;
-        private long delay;
-
-        public testTask(String cmd, TestHandler testHandler, int delay) {
-            this.cmd = cmd;
-            this.testHandler = testHandler;
-            this.delay = delay;
-        }
-
-        @Override
-        public void run() {
-            BufferedReader successReader = null;
-            BufferedReader errorReader = null;
-
-            try {
-                // test
-                process = Runtime.getRuntime().exec(cmd);
-
-                // success
-                successReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                // error
-                errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-                String lineStr;
-
-
-                while ((lineStr = successReader.readLine()) != null) {
-
-                    // receive
-                    Message msg = testHandler.obtainMessage();
-                    msg.obj = lineStr + "\r\n";
-                    msg.what = 10;
-                    msg.sendToTarget();
-
-                    formatGraph(lineStr + "\r\n");
-                    builder.append(lineStr + "\r\n");
-                }
-                while ((lineStr = errorReader.readLine()) != null) {
-
-                    // receive
-                    Message msg = testHandler.obtainMessage();
-                    msg.obj = lineStr + "\r\n";
-                    msg.what = 10;
-                    msg.sendToTarget();
-                }
-                Thread.sleep(delay * 1000);
-
-                process.waitFor();
-                toggle.setChecked(false);
-            } catch (Exception e) {
-                e.printStackTrace();
-            } finally {
-                try {
-
-                    if (successReader != null) {
-                        successReader.close();
-                    }
-                    if (errorReader != null) {
-                        errorReader.close();
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                if (process != null) {
-                    process.destroy();
-                }
-            }
-        }
     }
 
     // //   //  //  //
@@ -352,7 +251,8 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
         LineData data = new LineData();
         chart.getChart().setData(data);
 
-        testAdapter.clear();
+        TestAdapter adapter = (TestAdapter) mRecycler.getAdapter();
+        adapter.clear();
         mRecycler.removeAllViewsInLayout();
         builder.setLength(0);
     }
@@ -366,6 +266,7 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
         params.add(1, false);
         params.add(2, false);
         params.add(3, false);
+        interval = 1;
 
         for (String param : split) {
             if (param.contains("iperf3")) {
@@ -379,8 +280,10 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
             }
             if (param.contains("-i")) {
                 params.add(3, true);
-                int tmp = Integer.parseInt(param.replace("-i",""));
-                interval = tmp;
+                String tmp = param.replace("-i","");
+                if( tmp != "") {
+                    interval = Integer.parseInt(tmp);
+                }
             }
         }
         if(params.get(0) == false) {
@@ -542,6 +445,30 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
                 System.out.print("testPrint");
             }
         }
+    }
+
+    public RecyclerView getmRecycler() {
+        return mRecycler;
+    }
+
+    public RecyclerView getpRecycler() {
+        return pRecycler;
+    }
+
+    public TestAdapter getTestAdapter() {
+        return testAdapter;
+    }
+
+    public PresetAdapter getPresetAdapter() {
+        return presetAdapter;
+    }
+
+    public ToggleButton getToggle() {
+        return toggle;
+    }
+
+    public StringBuilder getBuilder() {
+        return builder;
     }
 }
 
