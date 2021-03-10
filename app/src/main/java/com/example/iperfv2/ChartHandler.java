@@ -37,7 +37,7 @@ public class ChartHandler {
             ILineDataSet set = data.getDataSetByIndex(0);
 
             if (set == null) {
-                set = createSet(1);
+                set = createSet(0);
                 data.addDataSet(set);
             }
             data.addEntry(new Entry(set.getEntryCount() * interval, (float) down), 0);
@@ -58,11 +58,11 @@ public class ChartHandler {
             ILineDataSet setUp = data.getDataSetByIndex(1);
 
             if (setDown == null) {
-                setDown = createSet(1);
+                setDown = createSet(0);
                 data.addDataSet(setDown);
             }
             if (setUp == null) {
-                setUp = createSet(2);
+                setUp = createSet(1);
                 data.addDataSet(setUp);
             }
 
@@ -78,7 +78,7 @@ public class ChartHandler {
     public LineDataSet createSet(int setType) {
         LineDataSet set = null;
         switch(setType) {
-            case 1:
+            case 0:
                 set = new LineDataSet(null, "Download");
                 set.setAxisDependency(YAxis.AxisDependency.LEFT);
                 set.setColor(Color.BLUE);
@@ -88,7 +88,7 @@ public class ChartHandler {
                 set.setDrawValues(false);
                 return set;
 
-            case 2:
+            case 1:
                 set = new LineDataSet(null, "Upload");
                 set.setAxisDependency(YAxis.AxisDependency.LEFT);
                 set.setColor(Color.RED);

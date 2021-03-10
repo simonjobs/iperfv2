@@ -40,7 +40,9 @@ public class PresetAdapter extends RecyclerView.Adapter {
     }
 
     public void clear(){
+        int size = stringList.size();
         stringList.clear();
+        notifyItemRangeRemoved(0, size);
         notifyDataSetChanged();
     }
 

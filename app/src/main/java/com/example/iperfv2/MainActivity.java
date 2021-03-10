@@ -83,6 +83,7 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
     private ArrayList<String> presets;
     private ArrayList<Float> pair;
     private int interval;
+    private boolean done;
 
     public static int PICK_FILE = 1;
     public static int PICK_PRESET = 2;
@@ -218,9 +219,10 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
     //  Process related methods //
     //  //  //  //  //  //  //  //
     public void executeTest(String cmd) {
-            executorService = Executors.newSingleThreadExecutor();
-            task = new TestTask(cmd, testHandler, 1, this);
-            executorService.execute(new Thread(task));
+        done = false;
+        executorService = Executors.newSingleThreadExecutor();
+        task = new TestTask(cmd, testHandler, 1, this);
+        executorService.execute(new Thread(task));
     }
 
     //Used to destroy running proccess
@@ -257,6 +259,7 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
         builder.setLength(0);
     }
 
+    // Adds certain tags to the command line if it recognizes an iperf string
     public String formatCmd(String cmd) {
         ArrayList<Boolean> params = new ArrayList<>();
         StringBuilder newCmd = new StringBuilder();
@@ -301,10 +304,11 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
         return newCmd.toString();
     }
 
-
+    //Method to load presets from textfile
     public void loadPresets(Uri uri) {
         String preset;
-        presetAdapter.clear();
+        PresetAdapter adapter = (PresetAdapter) pRecycler.getAdapter();
+        adapter.clear();
         pRecycler.removeAllViewsInLayout();
         BufferedReader reader = null;
         
@@ -327,8 +331,8 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
         }
     }
 
+    // Saves screenshot of graph and log file to iPerf location in external storage
     public void saveTest() {
-
         LocalDateTime time = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd-HH.mm.ss");
         String filename = time.format(formatter);
@@ -365,6 +369,7 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
         }
     }
 
+    // Used
     private void readTextFile(Uri uri){
         BufferedReader reader = null;
         try {
@@ -399,25 +404,31 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
         Pattern p = Pattern.compile("(T|R)X-C");
         Matcher m = p.matcher(msg);
 
-        if (m.find()) {
-            Pattern pp = Pattern.compile("(\\d*\\.*\\d*)\\d*\\s(\\w*)bits\\/sec");
-            Matcher mm = pp.matcher(msg);
-            while(mm.find()) {
-                if (pair.size() == 0) {
-                    pair.add(Float.valueOf(mm.group(1)));
+        if (msg.contains("- - - ")) {
+            done = true;
+        }
 
-                } else if (pair.size() == 1) {
-                    pair.add(Float.valueOf(mm.group(1)));
-                    chart.addDualEntry(pair.get(0), pair.get(1), interval);
-                    pair.clear();
+        if (!done) {
+            if (m.find()) {
+                Pattern pp = Pattern.compile("(\\d*\\.*\\d*)\\d*\\s(\\w*)bits\\/sec");
+                Matcher mm = pp.matcher(msg);
+                while(mm.find()) {
+                    if (pair.size() == 0) {
+                        pair.add(Float.valueOf(mm.group(1)));
+
+                    } else if (pair.size() == 1) {
+                        pair.add(Float.valueOf(mm.group(1)));
+                        chart.addDualEntry(pair.get(0), pair.get(1), interval);
+                        pair.clear();
+                    }
                 }
-            }
-        } else {
-            Pattern pp = Pattern.compile("(\\d*\\.*\\d*)\\d*\\s(\\w*)bits\\/sec");
-            Matcher mm = pp.matcher(msg);
-            while (mm.find()) {
-                float value = Float.valueOf(mm.group(1));
-                chart.addEntry(value, interval);
+            } else {
+                Pattern pp = Pattern.compile("(\\d*\\.*\\d*)\\d*\\s(\\w*)bits\\/sec");
+                Matcher mm = pp.matcher(msg);
+                while (mm.find()) {
+                    float value = Float.valueOf(mm.group(1));
+                    chart.addEntry(value, interval);
+                }
             }
         }
     }
