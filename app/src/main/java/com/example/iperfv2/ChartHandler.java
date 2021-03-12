@@ -24,7 +24,8 @@ public class ChartHandler {
         chart = (LineChart) activity.findViewById(R.id.chart1);
         chart.setBackgroundColor(Color.LTGRAY);
         chart.getDescription().setEnabled(false);
-        chart.setNoDataText("Run an iPerf command to graph output");
+        LineData data = new LineData();
+        chart.setData(data);
     }
 
     public void addEntry(float down, int interval) {

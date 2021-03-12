@@ -5,6 +5,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
@@ -18,6 +20,8 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
@@ -166,6 +170,11 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 //On
                 if (isChecked) {
+                    View view = MainActivity.this.getCurrentFocus();
+                    if (view != null) {
+                        InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+                        imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+                    }
                     clearView();
                     String cmd = inputText.getText().toString();
                     String result = formatCmd(cmd);
@@ -178,7 +187,9 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
                     }
                 //Off
                 } else {
-                    task.getProcess().destroy();
+                    if(task.getProcess() != null){
+                        task.getProcess().destroy();
+                    }
                     buttonView.setBackgroundColor(Color.RED);
                 }
             }

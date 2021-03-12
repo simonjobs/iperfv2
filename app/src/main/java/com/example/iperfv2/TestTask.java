@@ -32,6 +32,7 @@ public class TestTask implements Runnable {
             // test
             process = Runtime.getRuntime().exec(cmd);
 
+
             // success
             successReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             // error
@@ -63,7 +64,12 @@ public class TestTask implements Runnable {
             process.waitFor();
             activity.getToggle().setChecked(false);
         } catch (Exception e) {
-            e.printStackTrace();
+            Message msg = testHandler.obtainMessage();
+            msg.obj = e + "\r\n";
+            msg.what = 10;
+            msg.sendToTarget();
+
+            activity.getToggle().setChecked(false);
         } finally {
             try {
 

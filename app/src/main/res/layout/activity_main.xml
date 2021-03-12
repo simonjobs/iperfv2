@@ -10,54 +10,58 @@
         android:id="@+id/layoutFirst"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:context=".MainActivity"
-        android:windowSoftInputMode="adjustNothing">
+        android:windowSoftInputMode="adjustNothing"
+        tools:context=".MainActivity">
 
         <EditText
             android:id="@+id/inputText"
             android:layout_width="303dp"
             android:layout_height="0dp"
-            app:layout_constraintHeight_percent="0.05"
             android:layout_marginEnd="2dp"
             android:ems="10"
-            android:inputType="textPersonName"
             android:hint="Input"
+            android:inputType="textPersonName"
             app:layout_constraintEnd_toStartOf="@+id/toggleButton"
+            app:layout_constraintHeight_percent="0.05"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/mRecycler"
+
+        <HorizontalScrollView
             android:layout_width="match_parent"
             android:layout_height="0dp"
             app:layout_constraintHeight_percent="0.35"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.4"
-            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/chart1"
-            app:layout_constraintVertical_bias="0.0" />
+            app:layout_constraintStart_toStartOf="parent">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/mRecycler"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </HorizontalScrollView>
 
         <com.github.mikephil.charting.charts.LineChart
             android:id="@+id/chart1"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            app:layout_constraintHeight_percent="0.6"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHeight_percent="0.6"
             app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/inputText"
-            app:layout_constraintVertical_bias="0.006"/>
+            app:layout_constraintVertical_bias="0.006" />
 
         <ToggleButton
             android:id="@+id/toggleButton"
             android:layout_width="88dp"
             android:layout_height="0dp"
-            app:layout_constraintHeight_percent="0.05"
             android:background="@drawable/toggle"
             android:text="ToggleButton"
             app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHeight_percent="0.05"
             app:layout_constraintTop_toTopOf="parent" />
 
 
