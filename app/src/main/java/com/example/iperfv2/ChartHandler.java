@@ -65,13 +65,11 @@ public class ChartHandler {
                 setUp = createSet(1);
                 data.addDataSet(setUp);
             }
-
             setDown.addEntry(new Entry(setDown.getEntryCount() * interval, (float) down));
             setUp.addEntry(new Entry(setUp.getEntryCount() * interval, (float) up));
             data.notifyDataChanged();
             chart.notifyDataSetChanged();
             chart.invalidate();
-
         }
     }
 
@@ -80,27 +78,20 @@ public class ChartHandler {
         switch(setType) {
             case 0:
                 set = new LineDataSet(null, "Download");
-                set.setAxisDependency(YAxis.AxisDependency.LEFT);
                 set.setColor(Color.BLUE);
-                set.setCircleColor(Color.WHITE);
-                set.setLineWidth(2f);
-                set.setFillAlpha(65);
-                set.setDrawValues(false);
-                return set;
-
+                break;
             case 1:
                 set = new LineDataSet(null, "Upload");
-                set.setAxisDependency(YAxis.AxisDependency.LEFT);
                 set.setColor(Color.RED);
-                set.setCircleColor(Color.WHITE);
-                set.setLineWidth(2f);
-                set.setFillAlpha(65);
-                set.setDrawValues(false);
-                return set;
+                break;
         }
+        set.setAxisDependency(YAxis.AxisDependency.LEFT);
+        set.setCircleColor(Color.WHITE);
+        set.setLineWidth(2f);
+        set.setFillAlpha(65);
+        set.setDrawValues(false);
         return set;
     }
-
     public LineChart getChart() {
         return chart;
     }

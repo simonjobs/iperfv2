@@ -1,26 +1,19 @@
 package com.example.iperfv2;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
-import android.Manifest;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Handler;
 import android.os.Message;
 import android.provider.Settings;
 import android.system.ErrnoException;
 import android.system.Os;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -31,31 +24,18 @@ import android.widget.EditText;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 import android.widget.ViewFlipper;
-
-import com.github.mikephil.charting.charts.LineChart;
-import com.github.mikephil.charting.components.YAxis;
-import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
-import com.github.mikephil.charting.data.LineDataSet;
-import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
-import com.github.mikephil.charting.utils.ColorTemplate;
-import com.google.android.material.snackbar.Snackbar;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang.ref.WeakReference;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.*;
 
 public class MainActivity extends AppCompatActivity implements PresetAdapter.ListItemClickListener, ActivityCompat.OnRequestPermissionsResultCallback{
@@ -188,10 +168,10 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
                 if (isChecked) {
                     clearView();
                     String cmd = inputText.getText().toString();
+                    String result = formatCmd(cmd);
 
-                    // If command is not empty it will run otherwise act like no click happened.
-                    if (cmd.length() > 0) {
-                        executeTest(formatCmd(cmd));
+                    if(result != null && !result.isEmpty()) {
+                        executeTest(result);
                         buttonView.setBackgroundColor(Color.GREEN);
                     } else {
                         toggle.setChecked(false);
@@ -259,49 +239,30 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
         builder.setLength(0);
     }
 
-    // Adds certain tags to the command line if it recognizes an iperf string
     public String formatCmd(String cmd) {
-        ArrayList<Boolean> params = new ArrayList<>();
-        StringBuilder newCmd = new StringBuilder();
-        newCmd.append(cmd);
-        String[] split = cmd.split(" ");
-        params.add(0, false);
-        params.add(1, false);
-        params.add(2, false);
-        params.add(3, false);
         interval = 1;
+        String newCmd = cmd.trim();
+        Pattern p;
+        Matcher m;
 
-        for (String param : split) {
-            if (param.contains("iperf3")) {
-                params.add(0, true);
-            }
-            if (param.contains("--forceflush")) {
-                params.add(1, true);
-            }
-            if (param.contains("-f")) {
-                params.add(2, true);
-            }
-            if (param.contains("-i")) {
-                params.add(3, true);
-                String tmp = param.replace("-i","");
-                if( tmp != "") {
-                    interval = Integer.parseInt(tmp);
-                }
-            }
+        if(!cmd.startsWith("iperf3")) {
+            return newCmd;
         }
-        if(params.get(0) == false) {
-            return cmd;
+
+        if(!cmd.contains("--forceflush")) {
+            newCmd += " --forceflush";
         }
-        if(params.get(0) == true && params.get(1) == false) {
-            newCmd.append(" --forceflush");
+        p = Pattern.compile("(-i\\s*|--interval\\s*)(\\d*)");
+        m = p.matcher(newCmd);
+        if(m.find()) {
+            interval = Integer.parseInt(m.group(2));
         }
-        if(params.get(0) == true && params.get(2) == false) {
-            newCmd.append(" -fm");
+        p = Pattern.compile("(-f\\s*|--format\\s*)[kmgtKMGT]");
+        m = p.matcher(newCmd);
+        if(!m.find()) {
+            newCmd += " -fm";
         }
-        if(params.get(0) == true && params.get(3) == false) {
-            interval = 1;
-        }
-        return newCmd.toString();
+        return newCmd;
     }
 
     //Method to load presets from textfile
@@ -335,19 +296,14 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
     public void saveTest() {
         LocalDateTime time = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd-HH.mm.ss");
-        String filename = time.format(formatter);
+        String folderName = time.format(formatter);
 
         String fileContents = builder.toString();
 
         try {
             File extBaseDir = Environment.getExternalStorageDirectory();
-            File file = new File(extBaseDir.getAbsolutePath() + "/iPerf/" + filename );
-            if (!file.exists()) {
-                file.mkdirs();
-            } else {
-                file.delete();
-                file.mkdirs();
-            }
+            File file = new File(extBaseDir.getAbsolutePath() + "/iPerf/" + folderName );
+            file.mkdirs();
 
             String filePath = file.getAbsolutePath();
             FileOutputStream out = null;
@@ -362,7 +318,7 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
             msg.what = 10;
             msg.sendToTarget();
 
-            chart.getChart().saveToPath("graph", "/iPerf/" + filename);
+            chart.getChart().saveToPath("graph", "/iPerf/" + folderName);
 
             }catch (Exception e) {
             e.printStackTrace();
@@ -376,6 +332,7 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
             reader = new BufferedReader(new InputStreamReader(getContentResolver().openInputStream(uri)));
             String tmpLine = "";
             clearView();
+            interval = 1;
 
             while ((tmpLine = reader.readLine()) != null) {
 
