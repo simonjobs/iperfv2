@@ -8,6 +8,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
@@ -25,6 +26,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 import android.widget.ViewFlipper;
@@ -99,10 +101,10 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle item selection
         switch (item.getItemId()) {
-            case R.id.menu_about:
+            case R.id.menu_help:
 
                 AlertDialog alertDialog = new AlertDialog.Builder(this).create(); //Read Update
-                alertDialog.setTitle("Information");
+                alertDialog.setTitle("Help");
                 alertDialog.setMessage("" +
                         "1. Give file access in order to save and import tests and presets \n\n" +
                         "2. Import presets from txt file or input your own command \n\n" +
@@ -178,10 +180,8 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
                     clearView();
                     String cmd = inputText.getText().toString();
                     String result = formatCmd(cmd);
-
                     if(result != null && !result.isEmpty()) {
                         executeTest(result);
-                        buttonView.setBackgroundColor(Color.GREEN);
                     } else {
                         toggle.setChecked(false);
                     }
@@ -190,7 +190,6 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
                     if(task.getProcess() != null){
                         task.getProcess().destroy();
                     }
-                    buttonView.setBackgroundColor(Color.RED);
                 }
             }
         });

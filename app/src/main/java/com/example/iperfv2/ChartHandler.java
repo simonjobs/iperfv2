@@ -87,6 +87,8 @@ public class ChartHandler {
                 break;
         }
         set.setAxisDependency(YAxis.AxisDependency.LEFT);
+        set.setMode(LineDataSet.Mode.STEPPED);
+        set.setDrawCircles(false);
         set.setCircleColor(Color.WHITE);
         set.setLineWidth(2f);
         set.setFillAlpha(65);
