@@ -28,7 +28,7 @@ public class ChartHandler {
         chart.setData(data);
     }
 
-    public void addEntry(float down, int interval) {
+    public void addEntry(float down, float interval) {
 
         LineData data = chart.getData();
         chart.setData(data);
@@ -46,9 +46,11 @@ public class ChartHandler {
             chart.notifyDataSetChanged();
             chart.invalidate();
         }
+
+
     }
 
-    public void addDualEntry(float up, float down, int interval) {
+    public void addDualEntry(float up, float down, float interval) {
 
         LineData data = chart.getData();
         chart.setData(data);

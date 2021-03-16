@@ -1,5 +1,6 @@
 package com.example.iperfv2;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -8,8 +9,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.Configuration;
-import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -21,7 +20,6 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.CompoundButton;
@@ -30,7 +28,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 import android.widget.ViewFlipper;
+
 import com.github.mikephil.charting.data.LineData;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -44,7 +44,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.*;
 
-public class MainActivity extends AppCompatActivity implements PresetAdapter.ListItemClickListener, ActivityCompat.OnRequestPermissionsResultCallback{
+public class MainActivity extends AppCompatActivity implements PresetAdapter.ListItemClickListener, ActivityCompat.OnRequestPermissionsResultCallback {
 
     // Used to rotate main view and preset view
     private ViewFlipper flipper;
@@ -68,7 +68,7 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
     private StringBuilder builder;
     private ArrayList<String> presets;
     private ArrayList<Float> pair;
-    private int interval;
+    private float interval;
     private boolean done;
 
     public static int PICK_FILE = 1;
@@ -174,20 +174,20 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
                 if (isChecked) {
                     View view = MainActivity.this.getCurrentFocus();
                     if (view != null) {
-                        InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+                        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                         imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
                     }
                     clearView();
                     String cmd = inputText.getText().toString();
                     String result = formatCmd(cmd);
-                    if(result != null && !result.isEmpty()) {
+                    if (result != null && !result.isEmpty()) {
                         executeTest(result);
                     } else {
                         toggle.setChecked(false);
                     }
-                //Off
+                    //Off
                 } else {
-                    if(task.getProcess() != null){
+                    if (task.getProcess() != null) {
                         task.getProcess().destroy();
                     }
                 }
@@ -203,7 +203,6 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
             }
         });
     }
-
 
     // //   //  //  //  //  //  //
     //  Process related methods //
@@ -239,9 +238,12 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
     //  Misc methods //
     //  //  //  //  //
     public void clearView() {
+        done = false;
+
         chart.getChart().clear();
         LineData data = new LineData();
         chart.getChart().setData(data);
+
 
         TestAdapter adapter = (TestAdapter) mRecycler.getAdapter();
         adapter.clear();
@@ -337,11 +339,12 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
 
     // Used
     private void readTextFile(Uri uri){
+        clearView();
         BufferedReader reader = null;
         try {
             reader = new BufferedReader(new InputStreamReader(getContentResolver().openInputStream(uri)));
             String tmpLine = "";
-            clearView();
+
             interval = 1;
 
             while ((tmpLine = reader.readLine()) != null) {

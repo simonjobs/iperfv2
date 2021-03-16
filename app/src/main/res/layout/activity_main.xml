@@ -14,7 +14,7 @@
         tools:context=".MainActivity">
         <EditText
             android:id="@+id/inputText"
-            android:layout_width="303dp"
+            android:layout_width="0dp"
             android:layout_height="0dp"
             android:minHeight="150dp"
             android:layout_marginEnd="2dp"
@@ -23,15 +23,17 @@
             android:inputType="textPersonName"
             app:layout_constraintEnd_toStartOf="@+id/toggleButton"
             app:layout_constraintHeight_percent="0.05"
+            app:layout_constraintWidth_percent="0.8"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
         <ToggleButton
             android:id="@+id/toggleButton"
-            android:layout_width="88dp"
+            android:layout_width="0dp"
             android:layout_height="0dp"
             android:background="@drawable/toggle"
             android:text="ToggleButton"
+            app:layout_constraintWidth_percent="0.2"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHeight_percent="0.05"
             app:layout_constraintTop_toTopOf="parent" />
@@ -66,6 +68,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/inputText"
             app:layout_constraintVertical_bias="0.006" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <androidx.constraintlayout.widget.ConstraintLayout

@@ -1,5 +1,8 @@
 package com.example.iperfv2;
 
+import android.annotation.SuppressLint;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.Message;
 
 import java.io.BufferedReader;
