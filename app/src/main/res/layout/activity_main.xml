@@ -17,13 +17,14 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:minHeight="150dp"
-            android:layout_marginEnd="2dp"
+            android:layout_marginTop="6dp"
+            android:layout_marginLeft="8dp"
             android:ems="10"
             android:hint="Input"
             android:inputType="textPersonName"
             app:layout_constraintEnd_toStartOf="@+id/toggleButton"
             app:layout_constraintHeight_percent="0.05"
-            app:layout_constraintWidth_percent="0.8"
+            app:layout_constraintWidth_percent="0.77"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -32,20 +33,21 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:background="@drawable/toggle"
-            android:text="ToggleButton"
-            app:layout_constraintWidth_percent="0.2"
+            android:textOff="OFF"
+            android:textOn="ON"
+            android:layout_margin="6dp"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHeight_percent="0.05"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintHeight_percent="0.04"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintWidth_percent="0.19" />
 
 
         <HorizontalScrollView
             android:id="@+id/scrollView"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_marginRight="12dp"
-            android:layout_marginLeft="12dp"
-            app:layout_constraintHeight_percent="0.35"
+            android:layout_margin="8dp"
+            app:layout_constraintHeight_percent="0.3"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/chart1"
@@ -61,6 +63,7 @@
             android:id="@+id/chart1"
             android:layout_width="match_parent"
             android:layout_height="0dp"
+            android:layout_margin="8dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHeight_percent="0.6"
@@ -68,6 +71,18 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/inputText"
             app:layout_constraintVertical_bias="0.006" />
+
+        <TextView
+            android:id="@+id/textView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Output:"
+            android:layout_marginTop="4dp"
+            android:layout_marginLeft="8dp"
+            android:layout_marginBottom="4dp"
+            app:layout_constraintBottom_toTopOf="@id/scrollView"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/chart1"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

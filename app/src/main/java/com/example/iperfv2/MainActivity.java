@@ -223,7 +223,15 @@ public class MainActivity extends AppCompatActivity implements PresetAdapter.Lis
         if (executorService != null) {
             executorService.shutdownNow();
         }
+        if (task.getProcess() != null) {
+            task.getProcess().destroy();
+        }
         super.onDestroy();
+    }
+
+    @Override
+    public void onBackPressed() {
+        //Prevent app from detaching processes when accidentally going back
     }
 
     // Listens for click on preset RecyclerView and fetches clicked string to input box and switches view
